@@ -194,7 +194,7 @@ class RuYuan:
             logger.debug("Page content", content=content)
             logger.debug("Page title", title=title)
 
-            # Optionally, you can check for specific elements
+            # Check if specific elements are present
             try:
                 element = await page.query_selector('selector-for-element')  # Replace with actual selector
                 if element:
@@ -203,6 +203,14 @@ class RuYuan:
                     logger.warning("Element not found")
             except Exception as e:
                 logger.exception("Exception while checking element", exc=e)
+
+            # Additional debug: check for console logs
+            try:
+                logs = [log for log in page.console_messages()]
+                for log in logs:
+                    logger.debug("Console log", log=log.text)
+            except Exception as e:
+                logger.exception("Exception while checking console logs", exc=e)
 
             await context.close()
 
