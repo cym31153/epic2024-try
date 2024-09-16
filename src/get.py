@@ -202,7 +202,7 @@ class RuYuan:
             await page.goto(full_url)
     
             # 暂停脚本，以便你手动检查页面的状态（可在调试时使用）
-            await page.pause()
+#            await page.pause()
     
             await context.close()
 
