@@ -204,13 +204,11 @@ class RuYuan:
             except Exception as e:
                 logger.exception("Exception while checking element", exc=e)
 
-            # Additional debug: check for console logs
-            try:
-                logs = [log for log in page.console_messages()]
-                for log in logs:
-                    logger.debug("Console log", log=log.text)
-            except Exception as e:
-                logger.exception("Exception while checking console logs", exc=e)
+            # Add console log handling
+            def handle_console(msg):
+                logger.debug("Console message", msg=msg.text)
+
+            page.on("console", handle_console)
 
             await context.close()
 
