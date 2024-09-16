@@ -119,6 +119,47 @@ class RuYuan:
         ssq = SearchStoreQuery()
         full_url = ssq.query_all_promotions()
         await page.goto(full_url)
+        logger.info("Page loaded successfully", url=full_url)
+        async def stash(self):
+            if "linux" in sys.platform and "DISPLAY" not in os.environ:
+                self.headless = True
+        
+            logger.info(
+                "get",
+                image="20231121",
+                version=importlib_metadata.version("hcaptcha-challenger"),
+                role="EpicPlayer",
+                headless=self.headless,
+            )
+        
+            async with async_playwright() as p:
+                context = await p.firefox.launch_persistent_context(
+                    user_data_dir=self.player.browser_context_dir,
+                    record_video_dir=self.player.record_dir,
+                    record_har_path=self.player.record_har_path,
+                    headless=self.headless,
+                    locale=self.locale,
+                    args=["--hide-crash-restore-bubble"],
+                )
+                await Malenia.apply_stealth(context)
+        
+                page = context.pages[0]
+                ssq = SearchStoreQuery()
+                full_url = ssq.query_all_promotions()
+                logger.info("Navigating to URL", url=full_url)
+        
+                await page.goto(full_url)
+        
+                # 添加等待页面加载完成的代码
+                await page.wait_for_load_state("networkidle")
+                logger.info("Page loaded successfully")
+        
+                # 可选：添加日志检查页面内容
+                content = await page.content()
+                logger.debug("Page content", content=content)
+        
+                await context.close()
+
         await self._reset_state()
 
         if not self.promotions:
@@ -239,9 +280,13 @@ class RuYuan:
 
 
 async def run():
-    agent = RuYuan.from_epic()
-    agent.headless = False
-    await agent.stash()
+    try:
+        agent = RuYuan.from_epic()
+        agent.headless = False
+        await agent.stash()
+    except Exception as e:
+        logger.exception("Unhandled exception in run", exc=e)
+
 
 
 if __name__ == "__main__":
