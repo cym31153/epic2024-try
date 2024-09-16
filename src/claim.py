@@ -157,7 +157,11 @@ class ISurrender:
 async def run():
     agent = ISurrender.from_epic()
     agent.headless = False
-    await agent.stash()
+    try:
+        await agent.stash()
+    except Exception as e:
+        logger.exception(f"An unexpected error occurred: {e}")
+
 
 
 if __name__ == "__main__":
