@@ -255,16 +255,36 @@ class EpicGames:
         return self._solver.status.CHALLENGE_SUCCESS
 
     async def authorize(self, page: Page):
-        for i in range(3):
+        for i in range(3):  # 设置重试次数为3次
             try:
-                match await self._login(page):
-                    case self._solver.status.CHALLENGE_SUCCESS:
-                        return True
-                    case _:
-                        continue
+                logger.info("Starting authorization process")
+                
+                # 模拟登录的具体代码...
+                logger.debug(f"Current page URL: {page.url}")
+                
+                # 获取页面内容，检查登录状态
+                content = await page.content()
+    
+                if "Incorrect email or password" in content:
+                    logger.error("Authorization failed: Incorrect email or password")
+                    return False
+                elif "Two-Factor Authentication" in content:
+                    logger.error("Authorization failed: Two-Factor Authentication required")
+                    return False
+                else:
+                    logger.info("Authorization successful")
+                    return True
+    
             except TimeoutError:
-                logger.warning("执行超时", task="authorize", retry=i)
-                continue
+                logger.warning(f"Authorization attempt {i+1} timed out, retrying...")
+                continue  # 超时错误时，重试
+            except Exception as e:
+                logger.exception(f"Exception during authorization attempt {i+1}: {e}")
+                return False  # 其他未知异常时，终止重试并返回失败
+    
+        logger.error("Authorization failed after 3 attempts")
+        return False
+
 
         raise RuntimeError(f"Failed to flush token - agent={self.__class__.__name__}")
 
