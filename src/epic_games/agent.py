@@ -290,15 +290,31 @@ class EpicGames:
 
     async def flush_token(self, context: BrowserContext) -> Dict[str, str] | None:
         page = context.pages[0]
-        await page.goto("https://www.epicgames.com/account/personal", wait_until="networkidle")
-        await page.goto(
-            "https://store.epicgames.com/zh-CN/p/orwell-keeping-an-eye-on-you",
-            wait_until="networkidle",
-        )
-        await context.storage_state(path=self.player.ctx_cookie_path)
-        cookies = self.player.ctx_cookies.reload(self.player.ctx_cookie_path)
-        logger.success("flush_token", path=self.player.ctx_cookie_path)
-        return cookies
+        
+        try:
+            logger.info("Navigating to account personal page to refresh token")
+            await page.goto("https://www.epicgames.com/account/personal", wait_until="networkidle")
+            
+            # 检查是否已登录
+            content = await page.content()
+            if "Sign In" in content or "登录" in content:
+                logger.error("Flush token failed: Not logged in.")
+                return None
+    
+            logger.info("Logged in successfully, now navigating to store page")
+            await page.goto("https://store.epicgames.com/zh-CN/p/orwell-keeping-an-eye-on-you", wait_until="networkidle")
+            
+            # 保存 cookies
+            await context.storage_state(path=self.player.ctx_cookie_path)
+            cookies = self.player.ctx_cookies.reload(self.player.ctx_cookie_path)
+            
+            logger.success("Successfully flushed token", path=self.player.ctx_cookie_path)
+            return cookies
+        
+        except Exception as e:
+            logger.exception(f"Exception during flush_token: {e}")
+            return None
+
 
     @retry(
         retry=retry_if_exception_type(TimeoutError),
