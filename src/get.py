@@ -27,7 +27,6 @@ from epic_games import (
     get_promotions,
     get_order_history,
 )
-import urllib.parse
 
 self_supervised = True
 
