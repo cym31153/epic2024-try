@@ -58,21 +58,13 @@ class RuYuan:
     async def handler(self, response: Response):
         if response.url.startswith("https://store.epicgames.com/graphql"):
             try:
-                # 添加日志记录以检查处理的URL和响应状态
-                logger.info(f"Handling response from {response.url} with status {response.status}")
-                
-                # 打印整个响应的 JSON 数据，方便调试
                 data = await response.json()
-                logger.debug(f"Response data: {data}")
-                
-                # 将数据放入任务队列
+                logger.debug("Received data from response", data=data)
                 self.task_queue.put_nowait(data)
             except asyncio.QueueFull as err:
-                # 如果任务队列满了，输出警告日志
                 logger.warning("Task queue is full", err=err)
             except Exception as err:
-                # 捕获其他所有异常并记录日志
-                logger.exception(f"Error processing response: {err}")
+                logger.exception("Exception while handling response", err=err)
 
     @retry(
         retry=retry_if_exception_type(asyncio.QueueEmpty),
@@ -119,47 +111,6 @@ class RuYuan:
         ssq = SearchStoreQuery()
         full_url = ssq.query_all_promotions()
         await page.goto(full_url)
-        logger.info("Page loaded successfully", url=full_url)
-        async def stash(self):
-            if "linux" in sys.platform and "DISPLAY" not in os.environ:
-                self.headless = True
-        
-            logger.info(
-                "get",
-                image="20231121",
-                version=importlib_metadata.version("hcaptcha-challenger"),
-                role="EpicPlayer",
-                headless=self.headless,
-            )
-        
-            async with async_playwright() as p:
-                context = await p.firefox.launch_persistent_context(
-                    user_data_dir=self.player.browser_context_dir,
-                    record_video_dir=self.player.record_dir,
-                    record_har_path=self.player.record_har_path,
-                    headless=self.headless,
-                    locale=self.locale,
-                    args=["--hide-crash-restore-bubble"],
-                )
-                await Malenia.apply_stealth(context)
-        
-                page = context.pages[0]
-                ssq = SearchStoreQuery()
-                full_url = ssq.query_all_promotions()
-                logger.info("Navigating to URL", url=full_url)
-        
-                await page.goto(full_url)
-        
-                # 添加等待页面加载完成的代码
-                await page.wait_for_load_state("networkidle")
-                logger.info("Page loaded successfully")
-        
-                # 可选：添加日志检查页面内容
-                content = await page.content()
-                logger.debug("Page content", content=content)
-        
-                await context.close()
-
         await self._reset_state()
 
         if not self.promotions:
@@ -208,45 +159,6 @@ class RuYuan:
     async def stash(self):
         if "linux" in sys.platform and "DISPLAY" not in os.environ:
             self.headless = True
-    
-        # 在开始时添加日志记录，说明任务启动
-        logger.info(
-            "Starting Epic Games claim process",
-            image="20231121",
-            version=importlib_metadata.version("hcaptcha-challenger"),
-            role="EpicPlayer",
-            headless=self.headless,
-        )
-    
-        async with async_playwright() as p:
-            context = await p.firefox.launch_persistent_context(
-                user_data_dir=self.player.browser_context_dir,
-                record_video_dir=self.player.record_dir,
-                record_har_path=self.player.record_har_path,
-                headless=self.headless,
-                locale=self.locale,
-                args=["--hide-crash-restore-bubble"],
-            )
-            
-            # 添加日志记录，说明上下文已创建
-            logger.debug("Browser context launched successfully")
-    
-            await Malenia.apply_stealth(context)
-    
-            page = context.pages[0]
-            ssq = SearchStoreQuery()
-            full_url = ssq.query_all_promotions()
-            
-            # 添加日志记录，以检查完整的促销URL
-            logger.info(f"Navigating to promotion URL: {full_url}")
-    
-            await page.goto(full_url)
-    
-            # 暂停脚本，以便你手动检查页面的状态（可在调试时使用）
-#            await page.pause()
-    
-            await context.close()
-
 
         logger.info(
             "get",
@@ -270,11 +182,27 @@ class RuYuan:
             page = context.pages[0]
             ssq = SearchStoreQuery()
             full_url = ssq.query_all_promotions()
-            print(full_url)
+            logger.info("Navigating to URL", url=full_url)
 
             await page.goto(full_url)
+            await page.wait_for_load_state("networkidle")
+            logger.info("Page loaded successfully")
 
-            await page.pause()
+            # Add content and title checks for debugging
+            content = await page.content()
+            title = await page.title()
+            logger.debug("Page content", content=content)
+            logger.debug("Page title", title=title)
+
+            # Optionally, you can check for specific elements
+            try:
+                element = await page.query_selector('selector-for-element')  # Replace with actual selector
+                if element:
+                    logger.info("Element found")
+                else:
+                    logger.warning("Element not found")
+            except Exception as e:
+                logger.exception("Exception while checking element", exc=e)
 
             await context.close()
 
@@ -286,7 +214,6 @@ async def run():
         await agent.stash()
     except Exception as e:
         logger.exception("Unhandled exception in run", exc=e)
-
 
 
 if __name__ == "__main__":
